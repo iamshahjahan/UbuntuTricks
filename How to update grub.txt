@@ -16,3 +16,19 @@ Here are some steps to do:
 
 3. Now you can run boot-repair and select recommended repair.
 	It will automatically repair the boot.
+
+What to do when during installation of ubuntu, the partition is not showing.
+
+1. There might be several reasons for that:
+
+	a. Your secure boot might be on. You need to off it and legacy boot on.
+	b. It appears that the disk was partitioned using the GUID Partition Table (GPT) scheme (perhaps in a Mac) and was subsequently repartitioned using Master Boot Record (MBR) software that doesn't understand GPT. This tends to throw libparted, the library upon which the Ubuntu installer is based, for a loop.
+
+Fortunately, the solution isn't all that difficult, although you will have to download and manually install some software:
+
+
+    Boot into the Ubuntu Live CD. Alternatively, get the latest version of Parted Magic or System Rescue CD, boot it, and skip the next two steps.
+    Go to the GPT fdisk (gdisk) download page and obtain the latest version (0.6.13) for your architecture. I'm afraid I missed what that was, if it was stated. It'll be either the gdisk*i386.deb or gdisk*amd64.deb file.
+    Install the gdisk package file. Double-clicking on the desktop should do this, or you can type "sudo dpkg -i gdisk*deb" in the appropriate directory.
+    Open a shell and type "sudo sgdisk --zap /dev/sda". It'll complain about partition problems, but it will still work. Be sure to use the --zap option, not --zap-all; also, note that the command name is sgdisk, not gdisk.
+    Proceed with your Ubuntu installation.
