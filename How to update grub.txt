@@ -1,0 +1,18 @@
+What to do after installing windows in ubuntu.
+Or just upgrading it when you can not get your windows back.
+
+Here are some steps to do:
+
+1. You must have a live CD. You need to use linux so please make a live CD.
+2. Now you need to repair the boot. You have to download boot-repair from here. It can be done by:
+
+	sudo add-apt-repository ppa:yannubuntu/boot-repair
+	sudo apt-get update
+	sudo apt-get install boot-repair
+
+  The first line here simply adds ppa.
+  Second upgrades it.
+  Third install bootrepair.
+
+3. Now you can run boot-repair and select recommended repair.
+	It will automatically repair the boot.
