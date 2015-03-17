@@ -1,0 +1,5 @@
+Whenever you start ubuntu you get a lot of kernels. There are just waste of memory ( if not required ), remove them using following command.Please
+reboot your system before running this command.
+
+
+dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs sudo apt-get -y purge
