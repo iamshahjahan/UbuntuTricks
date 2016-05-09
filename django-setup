@@ -4,3 +4,4 @@ django.core.exceptions.ImproperlyConfigured: Error loading MySQLdb module: No mo
 
 sudo apt-get install python-mysqldb
 
+To import sqldump -u USERNAME -pPASSWORD DATABASE_NAME > DATABASE_FILE.sql
