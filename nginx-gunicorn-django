@@ -1,0 +1,123 @@
+After wasting a lot of hours, I finally figured out that how does nginx-gunicorn-django work actually. I followed the following guidelines:
+
+http://tutos.readthedocs.io/en/latest/source/ndg.html
+
+install python & python-virtualenv
+
+Make a virtual env:
+
+virtualenv --python=python3 --always-copy venv
+
+Move to the directory venv:
+
+source /var/www/test/venv/bin/activate
+
+Use pip to install django & guinicorn
+
+pip install django
+pip install gunicorn
+
+start new django project:
+
+django-admin startproject ourcase
+
+Run gunicorn:
+
+gunicorn ourcase.wsgi:application
+
+Make a gunicorn start file:
+
+/var/www/test/gunicorn_start.sh
+
+#!/bin/bash
+
+NAME="ourcase"                              #Name of the application (*)
+DJANGODIR=/var/www/test/ourcase             # Django project directory (*)
+SOCKFILE=/var/www/test/run/gunicorn.sock        # we will communicate using this unix socket (*)
+USER=nginx                                        # the user to run as (*)
+GROUP=webdata                                     # the group to run as (*)
+NUM_WORKERS=1                                     # how many worker processes should Gunicorn spawn (*)
+DJANGO_SETTINGS_MODULE=ourcase.settings             # which settings file should Django use (*)
+DJANGO_WSGI_MODULE=ourcase.wsgi                     # WSGI module name (*)
+
+echo "Starting $NAME as `whoami`"
+
+# Activate the virtual environment
+cd $DJANGODIR
+source /var/www/test/venv/bin/activate
+export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
+export PYTHONPATH=$DJANGODIR:$PYTHONPATH
+
+# Create the run directory if it doesn't exist
+RUNDIR=$(dirname $SOCKFILE)
+test -d $RUNDIR || mkdir -p $RUNDIR
+
+# Start your Django Unicorn
+# Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
+exec /var/www/test/venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
+  --name $NAME \
+  --workers $NUM_WORKERS \
+  --user $USER \
+  --bind=unix:$SOCKFILE
+  
+The nginx server file is:
+
+upstream test_server {
+  server unix:/var/www/test/run/gunicorn.sock fail_timeout=10s;
+}
+
+# This is not neccessary - it's just commonly used
+# it just redirects example.com -> www.example.com
+# so it isn't treated as two separate websites
+server {
+        listen 80;
+        server_name example.com;
+        return 301 $scheme://www.example.com$request_uri;
+}
+
+server {
+    listen   80;
+    server_name www.example.com;
+
+    client_max_body_size 4G;
+
+    access_log /var/www/test/logs/nginx-access.log;
+    error_log /var/www/test/logs/nginx-error.log warn;
+
+    location /static/ {
+        autoindex on;
+        alias   /var/www/test/ourcase/static/;
+    }
+
+    location /media/ {
+        autoindex on;
+        alias   /var/www/test/ourcase/media/;
+    }
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+
+        if (!-f $request_filename) {
+            proxy_pass http://test_server;
+            break;
+        }
+    }
+
+    #For favicon
+    location  /favicon.ico {
+        alias /var/www/test/test/static/img/favicon.ico;
+    }
+    #For robots.txt
+    location  /robots.txt {
+        alias /var/www/test/test/static/robots.txt ;
+    }
+    # Error pages
+    error_page 500 502 503 504 /500.html;
+    location = /500.html {
+        root /var/www/test/ourcase/static/;
+    }
+}
+
+Reload nginx and enjoy. :D 
